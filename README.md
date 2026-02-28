@@ -1,4 +1,5 @@
 # AlphaCrunch
+Crunching data for alpha (returns above market). 
 
 ## Datasets
 
