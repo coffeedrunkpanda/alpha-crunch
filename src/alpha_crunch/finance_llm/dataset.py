@@ -57,3 +57,20 @@ def load_datasets(dataset_dir, tokenizer):
     }
 
     return dataset_splits
+
+def tokenize_for_eval(dataset, tokenizer, max_length=512):
+    def tokenize(batch):
+        tokenized = tokenizer(
+            batch["chat"],
+            truncation=True,
+            max_length=max_length,
+            padding=False,
+        )
+        tokenized["labels"] = tokenized["input_ids"].copy()
+        return tokenized
+
+    return dataset.map(
+        tokenize,
+        batched=True,
+        remove_columns=["chat"]
+    )
