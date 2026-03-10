@@ -102,8 +102,8 @@ def classify_intent(question: str) -> str:
     response = response.json()["response"]
     clean_intent = response.lower().strip().strip('."\'\n')
 
-    if "rag" in clean_intent:
-        return "rag"
+    if "analyst" in clean_intent:
+        return "analyst"
     
-    # otherwise, fallback to analyst
-    return "analyst"
+    # otherwise, fallback to rag
+    return "rag"
