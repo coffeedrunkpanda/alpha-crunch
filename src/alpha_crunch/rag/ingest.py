@@ -82,11 +82,12 @@ def build_vector_database(chroma_path: str, max_rows: int = 500):
     print(f"Initializing embedding model on: {device.upper()}")
 
     model_kwargs = {'device': device}
-    encode_kwargs = {'normalize_embeddings': True, 'batch_size': 32}
+    encode_kwargs = {'normalize_embeddings': True, 'batch_size': 128}
     
     # TODO: upgrade to more precise embeddings bge-large-en-v1.5 or all-mpnet-base-v2
+    # really bad: all-MiniLM-L6-v2
     embeddings = HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2",
+        model_name="all-mpnet-base-v2",
         model_kwargs=model_kwargs,
         encode_kwargs=encode_kwargs
     )
