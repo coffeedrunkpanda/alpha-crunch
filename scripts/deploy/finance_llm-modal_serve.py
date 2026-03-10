@@ -1,4 +1,4 @@
-# scripts/deploy/finance_llm_modal.py
+# Run: modal deploy scripts/deploy/finance_llm_modal.py
 import os
 import modal
 import torch
@@ -11,8 +11,6 @@ from peft import PeftModel
 
 
 APP_NAME = "alpha-crunch-finance-llm"
-BASE_MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.2"
-
 MODEL_MOUNT = "/models"
 ADAPTER_MOUNT = "/adapters"
 
@@ -32,8 +30,8 @@ image = (
     )
 )
 
-base_volume = modal.Volume.from_name("alpha-crunch-models", create_if_missing=True)
-adapter_volume = modal.Volume.from_name("alpha-crunch-adapter", create_if_missing=True)
+adapter_volume = modal.Volume.from_name("alpha-crunch-adapter")
+base_volume = modal.Volume.from_name("alpha-crunch-models")
 
 class ChatRequest(BaseModel):
     message: str
@@ -49,8 +47,8 @@ class ChatRequest(BaseModel):
         MODEL_MOUNT: base_volume,
         ADAPTER_MOUNT: adapter_volume,
     },
-    secrets=[modal.Secret.from_name("huggingface-secret")],
 )
+
 @modal.asgi_app(requires_proxy_auth=True)
 def serve():
     model = None
@@ -60,27 +58,31 @@ def serve():
     async def lifespan(app: FastAPI):
         nonlocal model, tokenizer
 
-        hf_token = os.environ["HF_TOKEN"]
-
+        print("⬇️ Loading tokenizer from volume...")
         tokenizer = AutoTokenizer.from_pretrained(
-            BASE_MODEL_ID,
-            token=hf_token,
+            f"{MODEL_MOUNT}/mistral-7b",   # ← from volume, not HF
+            local_files_only=True,          # ← never hits HF
         )
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "left"
+        print("✅ Tokenizer loaded")
 
+        print("⬇️ Loading base model from volume...")
         base_model = AutoModelForCausalLM.from_pretrained(
-            BASE_MODEL_ID,
-            token=hf_token,
+            f"{MODEL_MOUNT}/mistral-7b",   # ← from volume, not HF
             torch_dtype=torch.float16,
             device_map="auto",
+            local_files_only=True,          # ← never hits HF
         )
+        print("✅ Base model loaded")
 
+        print("⬇️ Loading LoRA adapter from volume...")
         model = PeftModel.from_pretrained(
             base_model,
             f"{ADAPTER_MOUNT}/adapter",
         )
         model.eval()
+        print("✅ Adapter loaded — ready to serve")
 
         yield
 
