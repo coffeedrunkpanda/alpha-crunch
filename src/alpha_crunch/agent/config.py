@@ -25,10 +25,11 @@ COMPANY_ALIASES = {
 }
 
 # STATIC DATA LOADING (Runs once on import)
+# order enforced to check longer strings before small ones (avoids falso positives)
 try:
     with open(COMPANIES_JSON_FILE, "r", encoding="utf-8") as f:
-        SP500_CLEAN_NAMES = tuple(json.load(f))
-    COMPANY_REGISTRY = sorted(SP500_CLEAN_NAMES, key=len, reverse=True)
+        SP500_CLEAN_NAMES = json.load(f)
+    COMPANY_REGISTRY = tuple(sorted(SP500_CLEAN_NAMES, key=len, reverse=True))
 
 except FileNotFoundError:
     print(f"⚠️ WARNING: {COMPANIES_JSON_FILE} not found.")
