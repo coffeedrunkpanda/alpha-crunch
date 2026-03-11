@@ -7,6 +7,7 @@ from functools import lru_cache
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from alpha_crunch.agent.state import AgentState
+from alpha_crunch.agent.config import CHROMA_PATH
 
 # TODO: check if this is really loading only once
 @lru_cache(maxsize=1) # Only load once (singleton)
@@ -37,10 +38,7 @@ def rag_node(state: AgentState) -> dict:
     and updates the state with the formatted retrieved context.
     """
 
-    PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-    CHROMA_PATH = str(PROJECT_ROOT / "data" / "chroma_db")
-
-    query = state["query"]
+    query = state.query
     print(f"--- RAG NODE: Searching for '{query}' ---")
     
     # Get the retriever and fetch documents
@@ -63,6 +61,9 @@ def rag_node(state: AgentState) -> dict:
         formatted_context += f"[{company} - {year} ({item_type})] {doc.page_content}\n\n"
     
     print(f"--- RAG NODE: Retrieved {len(docs)} chunks successfully ---")
-    
+    print(f"--- RAG NODE: Docs:  ---")
+
+    print(formatted_context)
+
     # In LangGraph, returning a dictionary updates the state
     return {"retrieved_context": formatted_context}
