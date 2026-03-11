@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+from typing import List, Dict
 from dotenv import load_dotenv
 
 # env variables
@@ -17,29 +18,15 @@ headers = {
     "Modal-Secret": MODAL_SECRET,
 }
 
-# TODO: change the prompt template
-
-def ask_finance_llm(question: str,
-                    context: str | None = None) -> str:
-    """
-    Calls Finance LLM served on Modal.
-    """
-
-    prompt_template = (
-        "Use the following context to answer the question.\n\n"
-        "Context: {context}\n\n"
-        "Question: {question}"
-    )
-
-    if context:
-        content = prompt_template.format(context=context, question=question)
-    else:
-        content = question
+def ask_finance_llm(messages: List[Dict[str,str]],
+                    max_new_tokens:int = 512,
+                    temperature:float = 0.2) -> str:
+    """Client to call the Modal LLM endpoint."""
 
     payload = {
-        "message": content,
-        "max_new_tokens": 256,
-        "temperature": 0.2,
+        "messages": messages,
+        "max_new_tokens": max_new_tokens,
+        "temperature": temperature,
     }
 
     response = requests.post(
@@ -54,53 +41,13 @@ def ask_finance_llm(question: str,
     answer = response.json()["response"]
     return answer
 
+def classify_intent(messages: List[Dict[str,str]]) -> str:
 
-def get_intent_prompt(question: str) -> str:
-    # We use a strict few-shot prompt format
-    return f"""You are a strict routing assistant. Your job is to classify the user's question into one of two categories: "rag" or "analyst".
-
-Categories:
-- "rag": Use this when the user asks for specific numbers, earnings, SEC data, or historical facts about a specific company (e.g., Apple's revenue, Tesla's Q3 filings).
-- "analyst": Use this when the user asks for general definitions, financial concepts, or explanations that do not require looking up a specific company's document (e.g., what is inflation, what is a 10-K).
-
-Output EXACTLY one word: either "rag" or "analyst". Do not output anything else.
-
-Examples:
-Question: What was Microsoft's revenue in 2023?
-Category: rag
-
-Question: What is a P/E ratio?
-Category: analyst
-
-Question: Did Amazon beat earnings expectations last quarter?
-Category: rag
-
-Question: {question}
-Category:"""
-
-
-def classify_intent(question: str) -> str:
+    answer= ask_finance_llm(messages=messages,
+                            max_new_tokens=10,
+                            temperature=0.01)
     
-    # Prompt for routing
-    prompt = get_intent_prompt(question)
-
-    payload = {
-        "message": prompt,
-        "max_new_tokens": 15,
-        "temperature": 0.01,
-    }
-
-    response = requests.post(
-        f"{MODAL_ENDPOINT_URL}/generate",
-        headers=headers,
-        json=payload,
-        timeout=120,
-    )
-
-    response.raise_for_status()
-
-    response = response.json()["response"]
-    clean_intent = response.lower().strip().strip('."\'\n')
+    clean_intent = answer.lower().strip().strip('."\'\n')
 
     if "analyst" in clean_intent:
         return "analyst"
