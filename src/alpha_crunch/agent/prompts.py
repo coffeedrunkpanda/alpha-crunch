@@ -11,19 +11,34 @@ STRICT RULES:
 """
 
 rag_user_prompt = """
-Please answer the following financial question using ONLY the provided context. 
+You are an expert financial analyst. Your task is to analyze the following context and answer the user's question.
 
-Context: 
+<context>
 {context}
+</context>
 
-Question: {question}
+<question>
+{question}
+</question>
 
-INSTRUCTIONS:
-1. First, evaluate if the provided Context actually contains the information needed to answer the Question.
-2. If the Context is relevant, base your answer STRICTLY on the facts presented in it. Do not use outside knowledge.
-3. If the Context is NOT relevant or does not contain the specific answer, you must reply EXACTLY with: "I do not have enough information in the provided filings to confidently answer your question."
-4. Never attempt to guess, extrapolate, or twist irrelevant context to form an answer.
+<instructions>
+1. Determine if the context contains information related to the question.
+2. If relevant, synthesize the facts into a highly detailed and comprehensive summary.
+3. EXPAND on the details. Explain *why* or *how* based on the text.
+4. Base your answer STRICTLY on the facts presented.
+5. If the context is completely unrelated, reply EXACTLY with: "I do not have enough information in the provided filings to confidently answer your question."
+</instructions>
 
+<format_requirements>
+You MUST format your response exactly like this:
+[Brief introductory sentence summarizing the findings]
+
+* [Bullet point 1 with deep explanation]
+* [Bullet point 2 with deep explanation]
+* [Bullet point 3 with deep explanation]
+
+[Brief concluding sentence]
+</format_requirements>
 """
 
 analyst_user_prompt = """

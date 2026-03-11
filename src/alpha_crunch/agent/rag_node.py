@@ -1,35 +1,11 @@
-import os
-import torch
-from pathlib import Path
-from functools import lru_cache
-
-# Modern LangChain imports
-from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+import re
 from alpha_crunch.agent.state import AgentState
-from alpha_crunch.agent.config import CHROMA_PATH
+from alpha_crunch.agent.config import COMPANY_ALIASES, COMPANY_REGISTRY
+from alpha_crunch.agent.vector_store import get_chroma_retriever
 
-# TODO: check if this is really loading only once
-@lru_cache(maxsize=1) # Only load once (singleton)
-def get_chroma_retriever(chroma_path:str, k_text_chunks: int = 3, embedding_model:str = "all-mpnet-base-v2"):
-    """Initializes the ChromaDB connection and returns a retriever object."""
-
-    # 1. Should use the same embedding model used to create the Chroma DB
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    embeddings = HuggingFaceEmbeddings(
-        model_name=embedding_model,
-        model_kwargs={'device': device},
-        encode_kwargs={'normalize_embeddings': True}
-    )
-    
-    # Connect to the existing Chroma Database
-    vectorstore = Chroma(
-        persist_directory=chroma_path,
-        embedding_function=embeddings
-    )
-    
-    # Convert vectorstore into a LangChain retriever interface
-    return vectorstore.as_retriever(search_kwargs={"k": k_text_chunks})
+# TODO: Add fallback to Gemini or openai if no company was found.
+# this my happen in case of misspelling or aliases for the companies, 
+# or companies that are not available in the db, currently.
 
 def rag_node(state: AgentState) -> dict:
     """
@@ -40,14 +16,31 @@ def rag_node(state: AgentState) -> dict:
 
     query = state.query
     print(f"--- RAG NODE: Searching for '{query}' ---")
+
+    target_company = extract_target_company(query)
+    print(f"--- RAG NODE: Extracted Entity -> {target_company} ---")
     
     # Get the retriever and fetch documents
-    retriever = get_chroma_retriever(CHROMA_PATH)
-    docs = retriever.invoke(query)
+    retriever = get_chroma_retriever()
     
+    if target_company != "NONE":
+        print(f"--- RAG NODE: Applying Strict Metadata Filter for {target_company} ---")
+        retriever.search_kwargs = {
+            "k": 3, 
+            "filter": {"company": target_company} 
+        }
+
+    else:
+        # Fallback: if no company was found, do a broad semantic search
+        print("--- RAG NODE: No specific company detected. Doing broad search. ---")
+        retriever.search_kwargs = {"k": 3}
+    
+    # 4. Invoke the search
+    docs = retriever.invoke(query)
+        
     if not docs:
-        print("--- RAG NODE: No documents found ---")
-        return {"retrieved_context": "No specific context was found in the database."}
+        print(f"--- RAG NODE: No documents found ---")
+        return {"retrieved_context": f"No data found for {target_company} in the database."}
     
     # Format the retrieved documents nicely so the LLM can easily read them
     formatted_context = ""
@@ -67,3 +60,36 @@ def rag_node(state: AgentState) -> dict:
 
     # In LangGraph, returning a dictionary updates the state
     return {"retrieved_context": formatted_context}
+
+def extract_target_company(question: str) -> str:
+    """Extracts and formats the company name from the user's query."""
+
+    # First using company's list
+    """Hybrid Extractor with Alias Resolution."""
+    normalized_query = question.upper().replace("'", "").replace('"', "")
+    normalized_query = re.sub(r'[.,?]', '', normalized_query)
+    
+    # 1. Check for Aliases FIRST
+    # We iterate through our known aliases to see if the user typed one
+    for alias, official_name in COMPANY_ALIASES.items():
+        pattern = r'\b' + re.escape(alias) + r'S?\b'
+        if re.search(pattern, normalized_query):
+            print(f"--- RAG NODE: Resolved Alias '{alias}' -> '{official_name}' ---")
+            return official_name
+
+
+    # 2. Proceed to standard Exact Matching
+    sorted_names = sorted(COMPANY_REGISTRY, key=len, reverse=True)
+    
+    for company in sorted_names:
+        pattern = r'\b' + re.escape(company) + r'S?\b'
+        
+        if re.search(pattern, normalized_query):
+            # Short-name safety check (e.g., 'CA', '3M')
+            if len(company) <= 3:
+                strict_pattern = r'\b' + re.escape(company) + r'S?\b'
+                if not re.search(strict_pattern, question.replace("'", "").replace('"', "")):
+                    continue 
+            return company
+
+    return "NONE"
