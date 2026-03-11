@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from pydantic import BaseModel
+from typing import List, Dict
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
@@ -34,7 +35,7 @@ adapter_volume = modal.Volume.from_name("alpha-crunch-adapter")
 base_volume = modal.Volume.from_name("alpha-crunch-models")
 
 class ChatRequest(BaseModel):
-    message: str
+    messages: List[Dict[str,str]]
     max_new_tokens: int = 256
     temperature: float = 0.2
 
@@ -94,13 +95,9 @@ def serve():
 
     @web_app.post("/generate")
     def generate(req: ChatRequest):
-        messages = [
-            {"role": "system", "content": "You are a financial analyst assistant."},
-            {"role": "user", "content": req.message},
-        ]
 
         prompt = tokenizer.apply_chat_template(
-            messages,
+            req.messages,
             tokenize=False,
             add_generation_prompt=True,
         )
