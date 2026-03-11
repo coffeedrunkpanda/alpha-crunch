@@ -29,7 +29,7 @@ def llm_node (state: AgentState) -> dict:
 
     messages.append(user_prompt)
 
-    final_answer = ask_finance_llm(messages= messages)
+    final_answer = ask_finance_llm(messages= messages, temperature= 0.4)
 
     return {"final_answer": final_answer}
     
