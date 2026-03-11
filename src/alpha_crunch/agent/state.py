@@ -1,10 +1,11 @@
-from typing import TypedDict, Optional, List
+from pydantic import BaseModel, Field
+from typing import List
 from langchain_core.messages import BaseMessage
 
-class AgentState(TypedDict):
-    query: str                          # User's question — set once, never changed
-    intent: Optional[str]               # "rag" | "price" | "sentiment" | "direct"
-    retrieved_context: Optional[str]    # RAG output — None until rag_node runs
-    tool_output: Optional[str]          # yfinance/sentiment — None until tool nodes run
-    final_answer: Optional[str]         # Finance LLM's response
-    messages: List[BaseMessage]         # Conversation history (future multi-turn)
+class AgentState(BaseModel):
+    query: str                                                # User's question — set once, never changed
+    intent: str | None = None                                 # "rag" | "analyst"
+    retrieved_context: str | None = None                      # RAG output — None until tool nodes run
+    tool_output: str | None = None                            # yfinance/sentiment — None until tool nodes run
+    final_answer: str | None = None                           # Finance LLM's response
+    messages: List[BaseMessage] = Field(default_factory=list) # Conversation history (future multi-turn)

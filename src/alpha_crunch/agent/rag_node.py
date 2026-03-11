@@ -1,0 +1,95 @@
+import re
+from alpha_crunch.agent.state import AgentState
+from alpha_crunch.agent.config import COMPANY_ALIASES, COMPANY_REGISTRY
+from alpha_crunch.agent.vector_store import get_chroma_retriever
+
+# TODO: Add fallback to Gemini or openai if no company was found.
+# this my happen in case of misspelling or aliases for the companies, 
+# or companies that are not available in the db, currently.
+
+def rag_node(state: AgentState) -> dict:
+    """
+    The LangGraph node function for RAG.
+    It takes the current state, uses the query to search ChromaDB,
+    and updates the state with the formatted retrieved context.
+    """
+
+    query = state.query
+    print(f"--- RAG NODE: Searching for '{query}' ---")
+
+    target_company = extract_target_company(query)
+    print(f"--- RAG NODE: Extracted Entity -> {target_company} ---")
+    
+    # Get the retriever and fetch documents
+    retriever = get_chroma_retriever()
+    
+    if target_company != "NONE":
+        print(f"--- RAG NODE: Applying Strict Metadata Filter for {target_company} ---")
+        retriever.search_kwargs = {
+            "k": 3, 
+            "filter": {"company": target_company} 
+        }
+
+    else:
+        # Fallback: if no company was found, do a broad semantic search
+        print("--- RAG NODE: No specific company detected. Doing broad search. ---")
+        retriever.search_kwargs = {"k": 3}
+    
+    # 4. Invoke the search
+    docs = retriever.invoke(query)
+        
+    if not docs:
+        print(f"--- RAG NODE: No documents found ---")
+        return {"retrieved_context": f"No data found for {target_company} in the database."}
+    
+    # Format the retrieved documents nicely so the LLM can easily read them
+    formatted_context = ""
+    for i, doc in enumerate(docs):
+        # Extract the metadata we attached during ingestion
+        company = doc.metadata.get('company', 'Unknown')
+        year = doc.metadata.get('date', 'Unknown')[:4] # Grab just the YYYY
+        item_type = doc.metadata.get('item_type', 'Unknown')
+        
+        # Format: [APPLE - 2021 (item_1A)] The text goes here...
+        formatted_context += f"[{company} - {year} ({item_type})] {doc.page_content}\n\n"
+    
+    print(f"--- RAG NODE: Retrieved {len(docs)} chunks successfully ---")
+    print(f"--- RAG NODE: Docs:  ---")
+
+    print(formatted_context)
+
+    # In LangGraph, returning a dictionary updates the state
+    return {"retrieved_context": formatted_context}
+
+def extract_target_company(question: str) -> str:
+    """Extracts and formats the company name from the user's query."""
+
+    # First using company's list
+    """Hybrid Extractor with Alias Resolution."""
+    normalized_query = question.upper().replace("'", "").replace('"', "")
+    normalized_query = re.sub(r'[.,?]', '', normalized_query)
+    
+    # 1. Check for Aliases FIRST
+    # We iterate through our known aliases to see if the user typed one
+    for alias, official_name in COMPANY_ALIASES.items():
+        pattern = r'\b' + re.escape(alias) + r'S?\b'
+        if re.search(pattern, normalized_query):
+            print(f"--- RAG NODE: Resolved Alias '{alias}' -> '{official_name}' ---")
+            return official_name
+
+
+    # 2. Proceed to standard Exact Matching
+    sorted_names = sorted(COMPANY_REGISTRY, key=len, reverse=True)
+    
+    for company in sorted_names:
+        pattern = r'\b' + re.escape(company) + r'S?\b'
+        
+        if re.search(pattern, normalized_query):
+            # Short-name safety check (e.g., 'CA', '3M')
+            if len(company) <= 3:
+                strict_pattern = r'\b' + re.escape(company) + r'S?\b'
+                if not re.search(strict_pattern, question.replace("'", "").replace('"', "")):
+                    continue 
+            return company
+
+    return "NONE"
