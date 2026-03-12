@@ -16,13 +16,9 @@ def main():
     print(f"Targeting Database Path: {CHROMA_PATH}")
     
     # Run the ingestion function
-    # For testing, we pull 500 rows and filter specifically for Apple
     build_vector_database(
         chroma_path=CHROMA_PATH, 
-        max_rows=500, 
     )
-
-    save_company_names_json(CHROMA_PATH, 500)
 
 if __name__ == "__main__":
     main()
