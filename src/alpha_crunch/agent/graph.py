@@ -1,10 +1,17 @@
 from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.memory import MemorySaver
+
 from alpha_crunch.agent.state import AgentState
 from alpha_crunch.agent.nodes import llm_node, intent_node, route_by_intent
 from alpha_crunch.agent.rag_node import rag_node
 
+# START -> intent_node -> (conditional route) -> rag_node / llm_node -> END
 def build_graph():
     
+    # Persist memmory after reaching END: handles sesion's memory natively
+    # TODO: Change this to a persistent checkpoint saving the memory in a db PostgresSaver or MongoDBSaver
+    checkpointer = MemorySaver()
+
     # Create graph
     graph = StateGraph(AgentState)
 
@@ -29,6 +36,6 @@ def build_graph():
 
     print("🚨 IN BUILD GRAPH")
     # Compile/validate the graph
-    return graph.compile()
+    return graph.compile(checkpointer=checkpointer)
 
 alphaCrunch_agent = build_graph()
