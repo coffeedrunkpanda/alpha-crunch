@@ -71,21 +71,130 @@ def chat_interface(user_message: str, history: list):
     yield gr.ChatMessage(role="assistant", content=final_text)
 
 
+
 # ==========================================
 # Gradio UI Configuration (Gradio 6.0+)
 # ==========================================
-# 1. Remove theme from here
+
+custom_css = """
+/* 1. Loomy Dark Mesh Gradient */
+div {
+    background: transparent;
+}
+
+body, .gradio-container {
+    background-color: #0b0914 !important; 
+    background-image: 
+        radial-gradient(circle at 80% 0%, rgba(79, 172, 254, 0.4) 0px, transparent 20%),
+        radial-gradient(circle at 0% 0%, rgba(200, 100, 60, 0.3) 0px, transparent 30%), 
+        radial-gradient(circle at 80% 100%, rgba(161, 140, 209, 0.3) 0px, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(200, 50, 100, 0.4) 0px, transparent 50%)    
+        !important;
+    color: #e2e8f0 !important; 
+}
+
+* {
+    transition: 0.2s ease-in-out 0s;    
+}
+
+/* 2. Dark Glassmorphism for the Chat Window */
+/* We target the custom class we will define below */
+.my-chat-window {
+    background: rgba(30, 41, 59, 0.3) !important; /* Solid slate gray */
+    backdrop-filter: blur(28px) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important; 
+    box-shadow: 0 15px 50px 0 rgba(0, 0, 0, 0.8) !important; 
+}
+
+.gr-group  {
+    box-shadow: 0 15px 50px 0 rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+/* 3. The Input Box Container (Matching the Chat Window!) */
+.my-input-container {
+    border-radius: 10px;
+    background: rgba(30, 41, 59, 0.3) !important; /* Solid slate gray */
+    backdrop-filter: blur(28px) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Make sure the text area itself doesn't have its own weird background */
+.my-input-container textarea {
+    background: rgba(15, 15, 15, 0.8);
+    backdrop-filter: blur(28px) !important;
+}
+
+.my-input-container textarea:disabled {
+    opacity: 0;
+}
+
+.my-input-container textarea:focus {
+    background: rgba(10, 10, 10, 0.8);
+}
+
+.gr-group:focus-within {
+    outline: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0px 0px 25px 2px rgba(255, 255, 255, 0.2) !important; 
+    border-radius: 10px;
+}
+
+/* 4. Headers: Anta Font */
+h1, h2, h3, .form-label {
+    font-family: 'Anta', sans-serif !important;
+    color: #f8fafc !important;
+    letter-spacing: 1px;
+}
+h1 {
+    text-align: center;
+    text-shadow: 0 0 15px rgba(79, 172, 254, 0.4); 
+    font-weight: 400;
+}
+
+/* 5. Typewriter Chat Text */
+.message-wrap, .chatbot, textarea, input {
+    font-family: 'Montserrat', monospace !important;
+    font-size: 15px !important;
+    color: #cbd5e1 !important; 
+}
+
+/* Subtle dark tint for user bubble */
+.message.user {
+    background: rgba(77, 145, 227, 0.2) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.05) !important; /* Exact same border */
+}
+
+.message.bot {
+    background: rgba(232, 79, 149, 0.2)  !important; 
+    border: #6d28d9 !important; /* Exact same border */
+}
+
+"""
+
+# Theme adjusted for the purple/slate aesthetic
+custom_theme = themes.Soft(
+    font=[themes.GoogleFont("Anta"), themes.GoogleFont("Montserrat"), "sans-serif"],
+    primary_hue="violet",  
+    neutral_hue="slate"
+)
+
 with gr.Blocks() as demo:
     gr.Markdown("# 🚀 AlphaCrunch: Automated Investment Analyst")
-    gr.Markdown("Ask financial questions. RAG is powered by local ChromaDB and S&P 500 SEC 10-K filings.")
-    
-    # 2. Remove type="messages"
+    gr.Markdown("<div style='text-align: center;'>Ask financial questions. RAG is powered by local ChromaDB and S&P 500 SEC 10-K filings.</div>")
     chatbot = gr.ChatInterface(
         fn=chat_interface,
-        textbox=gr.Textbox(placeholder="Ask about Costco's risk factors or Apple's revenue..."),
+        chatbot=gr.Chatbot(elem_classes="my-chat-window", show_label=False),
+        textbox=gr.Textbox(
+            placeholder="Ask about Costco's risk factors or Apple's revenue...", 
+            container=False, # Hides Gradios internal label container
+            elem_classes="my-input-container"
+        ),
     )
 
 if __name__ == "__main__":
     print("Starting Gradio Server...")
-    demo.launch(theme=themes.Soft(), share=False)
-
+    demo.launch(theme=custom_theme,
+                css = custom_css,
+                share=False)
