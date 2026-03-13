@@ -55,11 +55,15 @@ Adapter (~30MB) saved in ./outputs/finance-llm-adapter; eval with BERTScore, LLM
 
 ## Architecture
 
+```bash
 Gradio UI → LangGraph (AgentState: messages, intent, context, answer)
            ↓ intent_node (Finance LLM)
       ┌──────┼──────┐
   RAG    Analyst   Help
 (Chroma) (Reason) (Info)
+         ↓ Answer
+
+```
 
 
 ```
@@ -90,7 +94,7 @@ Copy .env.sample → .env (add Modal API key).
 
 3. Launch Gradio UI:
    ```bash
-    alphacrunch-ui 
+    uv run python src/alpha_crunch/app.py
    ```
 
    Features custom CSS (loomy mesh gradient, Anta/Courier Prime fonts, glassmorphism). [gradio](https://www.gradio.app/4.44.1/docs/gradio/chatinterface)
@@ -100,10 +104,22 @@ Copy .env.sample → .env (add Modal API key).
 Query: "What are Apple's main supply chain risks?"  
 Answer: Apple's supply chain risks include disruptions in manufacturing or logistics, sole-sourcing reliance on certain vendors for critical components, and foreign currency exchange rate fluctuations. These risks could materially affect the Company’s financial condition and operating results.
 
+### Sample questions:
+
+ - what is asset allocation?
+
+- what is the sec fillings 10k? why does it matter? 
+
+- what are the most important concepts in investment? 
+
+- What are Apple's main supply chain risks?
+
+- Describe tesla's business.
 
 ## Limitations & Next
 
 - Single company/query only—no multi-compare yet.
+- Add more metadata filtering to improve the accuracy of the agent. 
 - No information on stock prices. Next: yfinance integration.
 
 ## Tech Stack

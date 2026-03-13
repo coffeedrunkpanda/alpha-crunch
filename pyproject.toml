@@ -26,8 +26,5 @@ dependencies = [
     "gradio>=6.9.0",
 ]
 
-[project.scripts]
-alphacrunch-ui = "alpha_crunch.app:demo.launch"
-
 [tool.setuptools.packages.find]
 where = ["src"]
