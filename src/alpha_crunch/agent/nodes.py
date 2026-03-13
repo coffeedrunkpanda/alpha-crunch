@@ -122,7 +122,6 @@ def route_by_intent(state: AgentState) -> str:
     # Fallback just in case
     return "help"
 
-
 def help_node(state: AgentState) -> dict:
     """Direct tool invocation."""
     # from alpha_crunch.agent.tools import get_dataset_help

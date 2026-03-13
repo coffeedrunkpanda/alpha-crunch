@@ -2,6 +2,7 @@ import re
 from alpha_crunch.agent.state import AgentState
 from alpha_crunch.agent.config import COMPANY_ALIASES, COMPANY_REGISTRY
 from alpha_crunch.agent.vector_store import get_chroma_retriever
+from alpha_crunch.agent.tools import CORPUS_INFO, COMPANIES
 
 # TODO: Add fallback to Gemini or openai if no company was found.
 # this my happen in case of misspelling or aliases for the companies, 
@@ -50,8 +51,8 @@ def rag_node(state: AgentState) -> dict:
     docs = retriever.invoke(current_query)
         
     if not docs:
-        print(f"--- RAG NODE: No documents found ---")
-        return {"retrieved_context": f"No data found for {target_company} in the database."}
+        disclaimer = f"**Disclaimer**: No data found. Dataset covers {CORPUS_INFO['coverage']['years']['min_year']}-{CORPUS_INFO['coverage']['years']['max_year']} for {len(COMPANIES)} S&P 500 companies (see /help)."
+        return {"retrieved_context": disclaimer}
     
     # Format the retrieved documents nicely so the LLM can easily read them
     formatted_context = ""
@@ -67,10 +68,20 @@ def rag_node(state: AgentState) -> dict:
     print(f"--- RAG NODE: Retrieved {len(docs)} chunks successfully ---")
     print(f"--- RAG NODE: Docs:  ---")
 
-    print(formatted_context)
+    disclaimer = f"""**RAG CONTEXT DISCLAIMER** (Dataset: {CORPUS_INFO['source']['dataset_description']}):
+- Coverage: {CORPUS_INFO['coverage']['years']['min_year']}-{CORPUS_INFO['coverage']['years']['max_year']} ({len(COMPANIES)} companies: see /help).
+- Items: {', '.join(CORPUS_INFO['coverage']['items_included'])}.
+- Query focused on: {target_company if target_company != 'NONE' else 'broad search'}.
+- Cite sources precisely. Say 'No data post-2022' if needed.
+
+**Retrieved Docs ({len(docs)} chunks):**
+"""
+    full_context = disclaimer + formatted_context
+    
+    print(f"--- RAG NODE: Context w/ disclaimer ({len(full_context)} chars) ---")
 
     # In LangGraph, returning a dictionary updates the state
-    return {"retrieved_context": formatted_context}
+    return {"retrieved_context": full_context}
 
 def extract_target_company(query: str) -> str:
     """Extracts and formats the company name from the user's query."""
