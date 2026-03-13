@@ -3,7 +3,7 @@
 AlphaCrunch is a LangGraph-powered conversational AI agent using a QLoRA fine-tuned Mistral-7B-Instruct-v0.2 Finance LLM, trained on virattt/financial-qa-10K SEC Q&A data. It powers RAG (ChromaDB) analysis of S&P 500 10-K filings from the jlohding/sp500-edgar-10k with multi-turn memory and Gradio UI.
 
 ## 📁 Repository Structure
-
+```
 ├── .env.sample              # Env vars (Modal token, paths)
 ├── .gitignore
 ├── LICENSE
@@ -19,7 +19,7 @@ AlphaCrunch is a LangGraph-powered conversational AI agent using a QLoRA fine-tu
 ├── src/alpha_crunch/        # Core package (see sub-structure)
 ├── .venv/
 └── wandb/                   # W&B runs (LoRA eval)
-
+```
 
 ## Core Features
 
