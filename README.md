@@ -38,9 +38,9 @@ Performed local QLoRa fine-tuning on the [Mistral 7B Intruct v0.2](https://huggi
 | Targets    | q,k,v,o,gate,up,down     | Near full fine-tune quality              |
 | Template   | Mistral [INST] chat      | Instruction-tuned base                   |
 
-Adapter (~30MB) saved in WandB; eval with BERTScore, LLM-as-Judge, also logged to W&B.
+Adapter (~30MB) saved in [WandB](https://wandb.ai/coffeedrunk/finance-llm/artifacts/adapter/finance-llm-adapter/v1/files); eval with BERTScore, LLM-as-Judge, also logged to W&B.
 
-> Mode information available at:
+> To access the dashboard of the fine-tuning and eval:
 > - [WandB LoRA fine-tunning dashboard](https://wandb.ai/coffeedrunk/finance-llm/workspace?nw=nwusercoffeedrunk)
 > - [WandB Evals dashboard](https://wandb.ai/coffeedrunk/finance-llm-evals/workspace?nw=nwusercoffeedrunk)
 
