@@ -1,16 +1,17 @@
 from alpha_crunch.agent.graph import alphaCrunch_agent
 from alpha_crunch.agent.state import AgentState
-from alpha_crunch.agent.rag_node import rag_node
+from langchain_core.messages import HumanMessage
 
 def run(query: str):
     # This initial state triggers the execution
-    initial_state = AgentState(query=query)
+    initial_state = AgentState(messages=[HumanMessage(content=query)])
 
     print(f"Submitting query: {query}")
+
     # .invoke() is what actually runs the nodes and triggers the prints
-    result = alphaCrunch_agent.invoke(initial_state)
-    
-    return result
+    final_state = alphaCrunch_agent.invoke(initial_state, config={"configurable": {"thread_id": "session_2"}})
+
+    return final_state
 
 
 if __name__ == "__main__":

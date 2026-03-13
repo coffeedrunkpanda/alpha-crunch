@@ -8,7 +8,6 @@ CHROMA_PATH = str(DATA_DIR/ "chroma_db")
 COMPANIES_JSON_FILE = DATA_DIR / "company_registry.json"
 
 # TODO: add embedding and k chunks here
-# TODO: Verify if I need any additional companies
 
 COMPANY_ALIASES = {
     "GOOGLE": "ALPHABET",
@@ -21,7 +20,13 @@ COMPANY_ALIASES = {
     "GE": "GENERAL ELECTRIC",
     "GM": "GENERAL MOTORS",
     "JPM": "J P MORGAN CHASE",
-    "JP MORGAN": "J P MORGAN CHASE"
+    "JP MORGAN": "J P MORGAN CHASE",
+    "JPMORGAN CHASE": "J P MORGAN CHASE",
+    "COSTCO": "COSTCO WHOLESALE",
+    "UNITED TECHNOLOGIES": "RAYTHEON TECHNOLOGIES",
+    "WAL MART STORES": "WALMART",
+    "WALMART STORES": "WALMART",
+    "LILLY ELI": "ELI LILLY",
 }
 
 # STATIC DATA LOADING (Runs once on import)
