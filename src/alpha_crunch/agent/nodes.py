@@ -1,3 +1,4 @@
+# alpha-crunch/src/alpha_crunch/agent/nodes.py
 from langchain_core.messages import AIMessage, HumanMessage
 
 from alpha_crunch.agent.llm_client import ask_finance_llm, classify_intent
@@ -6,6 +7,8 @@ from alpha_crunch.agent.prompts import (SYSTEM_PROMPT,
                                         rag_user_prompt,
                                         analyst_user_prompt,
                                         INTENT_SYSTEM_PROMPT)
+
+from alpha_crunch.agent.tools import get_dataset_help
 
 # Adapter Design Pattern
 def _format_chat_messages(state: AgentState):
@@ -59,6 +62,13 @@ def intent_node(state: AgentState) -> dict:
     """
     current_query = state.messages[-1].content
 
+    # Keyword fallback (fast, no LLM)
+    help_keywords = ["help", "cutoff", "info"]
+    if any(word in current_query for word in help_keywords):
+        print("--- FAST ROUTE: Help keywords detected ---")
+        return {"intent": "help"}
+
+
     # Build message list using a system prompt and examples to simulate a conversation history
     messages = [
         {"role": "system", "content": INTENT_SYSTEM_PROMPT},
@@ -71,6 +81,9 @@ def intent_node(state: AgentState) -> dict:
         # Example 3
         {"role": "user", "content": "Did Amazon beat earnings expectations last quarter?"},
         {"role": "assistant", "content": "rag"},
+        # Example 4
+        {"role": "user", "content": "What companies do you have data for? Help!"},
+        {"role": "assistant", "content": "help"},
         # The actual query we need to classify
         {"role": "user", "content": current_query},       
         ]
@@ -80,11 +93,13 @@ def intent_node(state: AgentState) -> dict:
     print(f"--- ROUTING: Intent classified as '{intent}' ---")
     
     if intent == "analyst":
-        # Wipes old data to keep the database clean and state truthful
-        return {"intent": intent, "retrieved_context": None} 
-    else:
+        return {"intent": intent, "retrieved_context": None}
+    
+    elif intent == "rag":
         return {"intent": intent}
-
+    
+    else:  # rag or fallback
+        return {"intent": "help"}
 
 def route_by_intent(state: AgentState) -> str:
     """
@@ -99,6 +114,27 @@ def route_by_intent(state: AgentState) -> str:
     elif intent == "analyst":
         print("--- ROUTING TO: llm_node ---")
         return "llm_node"
-        
+    
+    elif intent == "help":
+        print("--- ROUTING TO: help_node ---")
+        return "help_node"
+    
     # Fallback just in case
-    return "llm_node"
+    return "help"
+
+
+def help_node(state: AgentState) -> dict:
+    """Direct tool invocation."""
+    # from alpha_crunch.agent.tools import get_dataset_help
+    
+    # CORRECT: Use .invoke() (takes dict or input matching tool args)
+    tool_result = get_dataset_help.invoke({})  # {} for no-input tool
+    
+    # ALTERNATIVE: .run("") if simple str input
+    # tool_result = get_dataset_help.run("")
+    
+    print("--- HELP TOOL INVOKED ---")
+    return {
+        "messages": [AIMessage(content=str(tool_result))],  # str() for safety
+        "intent": None
+    }
