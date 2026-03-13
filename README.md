@@ -1,6 +1,6 @@
-# AlphaCrunch: Automated Investment Analyst Agent 🏦🤖
+# 🏦🤖 AlphaCrunch: Automated Investment Analyst Agent
 
-AlphaCrunch is a LangGraph-powered conversational AI agent using a QLoRA fine-tuned Mistral-7B-Instruct-v0.2 Finance LLM, trained on virattt/financial-qa-10K SEC Q&A data. It powers RAG (ChromaDB) analysis of S&P 500 10-K filings from the jlohding/sp500-edgar-10k with multi-turn memory and Gradio UI.
+AlphaCrunch is a LangGraph-powered conversational AI agent using a QLoRA fine-tuned Mistral-7B-Instruct-v0.2 Finance LLM, trained on [virattt/financial-qa-10K](https://huggingface.co/datasets/virattt/financial-qa-10K/viewer/default/train) SEC Q&A data. It powers RAG (ChromaDB) analysis of S&P 500 10-K filings from the [jlohding/sp500-edgar-10k](https://huggingface.co/datasets/jlohding/sp500-edgar-10k) with multi-turn memory and Gradio UI.
 
 ![AlphaCrunch Demo](demo/demo.gif)
 
@@ -29,6 +29,8 @@ AlphaCrunch is a LangGraph-powered conversational AI agent using a QLoRA fine-tu
 
 Fine-tuned on 70% RAG-simulated (context + question → answer) and 30% pure knowledge format; 80/10/10 train/val/test split.
 
+Performed local QLoRa fine-tuning on the [Mistral 7B Intruct v0.2](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2) model and deployed to [modal](https://modal.com), accessed through API (FastAPI).
+
 | Key Params | Value                    | Reason                                   |
 | ---------- | ------------------------ | ---------------------------------------- |
 | LoRA rank  | r=16, alpha=32           | Capacity/VRAM balance (fits RTX 5070 Ti) |
@@ -36,10 +38,11 @@ Fine-tuned on 70% RAG-simulated (context + question → answer) and 30% pure kno
 | Targets    | q,k,v,o,gate,up,down     | Near full fine-tune quality              |
 | Template   | Mistral [INST] chat      | Instruction-tuned base                   |
 
-Adapter (~30MB) saved in ./outputs/finance-llm-adapter; eval with BERTScore, LLM-as-Judge, logged to W&B.
+Adapter (~30MB) saved in WandB; eval with BERTScore, LLM-as-Judge, also logged to W&B.
 
-- [WandB LoRA fine-tunning dashboard](https://wandb.ai/coffeedrunk/finance-llm/workspace?nw=nwusercoffeedrunk)
-- [WandB Evals dashboard](https://wandb.ai/coffeedrunk/finance-llm-evals/workspace?nw=nwusercoffeedrunk)
+> Mode information available at:
+> - [WandB LoRA fine-tunning dashboard](https://wandb.ai/coffeedrunk/finance-llm/workspace?nw=nwusercoffeedrunk)
+> - [WandB Evals dashboard](https://wandb.ai/coffeedrunk/finance-llm-evals/workspace?nw=nwusercoffeedrunk)
 
 
 ### RAG
@@ -129,3 +132,13 @@ Answer: Apple's supply chain risks include disruptions in manufacturing or logis
 - LangGraph for stateful agents with custom nodes and routing. 
 - ChromaDB local vector store; uv package management; python-dotenv.
 - QLoRA-tuned Mistral-7B-Instruct (finance-specialized on SEC Q&A); Gradio ChatInterface. 
+
+- Project Manegement with [Linear](https://linear.app)
+
+## Interesting Links
+
+[LoRA vs. QLoRA - Pranav Patel](https://www.mercity.ai/blog-post/guide-to-fine-tuning-llms-with-lora-and-qlora/)
+
+[LoRA vs. QLoRA - Redhat](https://www.redhat.com/en/topics/ai/lora-vs-qlora)
+
+[Instruction Tuning](https://oneuptime.com/blog/post/2026-01-30-llmops-instruction-tuning/view)
