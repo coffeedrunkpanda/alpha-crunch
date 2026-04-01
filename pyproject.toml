@@ -24,6 +24,13 @@ dependencies = [
     "langchain-core>=1.2.18",
     "torch>=2.10.0",
     "gradio>=6.9.0",
+    "modal>=1.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "httpx",    
 ]
 
 [tool.setuptools.packages.find]
