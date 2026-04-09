@@ -1,12 +1,14 @@
 import re
 from alpha_crunch.agent.state import AgentState
 from alpha_crunch.agent.config import COMPANY_ALIASES, COMPANY_REGISTRY
-from alpha_crunch.agent.vector_store import get_chroma_retriever
 from alpha_crunch.agent.tools import CORPUS_INFO, COMPANIES
+from alpha_crunch.vector_db.factory import get_vector_db_provider
+from alpha_crunch.agent.config import VECTOR_K_DEFAULT
 
 # TODO: Add fallback to Gemini or openai if no company was found.
 # this my happen in case of misspelling or aliases for the companies, 
 # or companies that are not available in the db, currently.
+# TODO: Add logger and remove print statements.
 
 def rag_node(state: AgentState) -> dict:
     """
@@ -14,6 +16,8 @@ def rag_node(state: AgentState) -> dict:
     It takes the current state, uses the query to search ChromaDB,
     and updates the state with the formatted retrieved context.
     """
+
+    vectorstore = get_vector_db_provider()
 
     print("\n--- 🚨 DEBUG STATE ---")
     print(f"Number of messages: {len(state.messages)}")
@@ -32,23 +36,9 @@ def rag_node(state: AgentState) -> dict:
     target_company = extract_target_company(current_query)
     print(f"--- RAG NODE: Extracted Entity -> {target_company} ---")
     
-    # Get the retriever and fetch documents
-    retriever = get_chroma_retriever()
     
-    if target_company != "NONE":
-        print(f"--- RAG NODE: Applying Strict Metadata Filter for {target_company} ---")
-        retriever.search_kwargs = {
-            "k": 3, 
-            "filter": {"company": target_company} 
-        }
-
-    else:
-        # Fallback: if no company was found, do a broad semantic search
-        print("--- RAG NODE: No specific company detected. Doing broad search. ---")
-        retriever.search_kwargs = {"k": 3}
-    
-    # 4. Invoke the search
-    docs = retriever.invoke(current_query)
+    filter = {"company": target_company} if target_company != "NONE" else None
+    docs = vectorstore.search(current_query, k=VECTOR_K_DEFAULT, filter=filter)
         
     if not docs:
         disclaimer = f"**Disclaimer**: No data found. Dataset covers {CORPUS_INFO['coverage']['years']['min_year']}-{CORPUS_INFO['coverage']['years']['max_year']} for {len(COMPANIES)} S&P 500 companies (see /help)."

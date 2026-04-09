@@ -1,13 +1,12 @@
 import json
 from pathlib import Path
+from typing import Literal
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
 CHROMA_PATH = str(DATA_DIR/ "chroma_db")
 COMPANIES_JSON_FILE = DATA_DIR / "company_registry.json"
-
-# TODO: add embedding and k chunks here
 
 COMPANY_ALIASES = {
     "GOOGLE": "ALPHABET",
@@ -39,3 +38,8 @@ try:
 except FileNotFoundError:
     print(f"⚠️ WARNING: {COMPANIES_JSON_FILE} not found.")
     COMPANY_REGISTRY = tuple()
+
+# Vector DB Provider
+VECTOR_DB_PROVIDER: Literal["chroma", "pinecone"] = "chroma"
+VECTOR_K_DEFAULT: int = 3
+CHROMA_EMBEDDING_MODEL: str = "all-mpnet-base-v2"
