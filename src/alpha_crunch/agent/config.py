@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Literal
+from alpha_crunch.vector_db.types import VectorDBProvider
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -40,6 +40,8 @@ except FileNotFoundError:
     COMPANY_REGISTRY = tuple()
 
 # Vector DB Provider
-VECTOR_DB_PROVIDER: Literal["chroma", "pinecone"] = "chroma"
+VECTOR_DB_PROVIDER: VectorDBProvider = VectorDBProvider.CHROMA_MODAL
 VECTOR_K_DEFAULT: int = 3
+
+# Only set when using Chroma provider
 CHROMA_EMBEDDING_MODEL: str = "all-mpnet-base-v2"
