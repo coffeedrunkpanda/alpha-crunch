@@ -8,14 +8,22 @@ from typing import Dict, List
 
 DATA_PATH = Path(CHROMA_PATH).parent
 
-# Load corpus info
+# TODO: Add fallback for CORPUS_INFO and COMPANIES if they are not found.
 
-with open(DATA_PATH / "corpus_description.json", "r") as f:
-    CORPUS_INFO = json.load(f)
+# Loads corpus info
+try:
+    with open(DATA_PATH / "corpus_description.json", "r") as f:
+        CORPUS_INFO = json.load(f)
 
-# Load companies
-with open(DATA_PATH / "company_registry.json", "r") as f:
-    COMPANIES = json.load(f)
+except FileNotFoundError:
+    raise FileNotFoundError(f"⚠️ WARNING: {DATA_PATH / 'corpus_description.json'} not found.")
+
+# Loads companies
+try:
+    with open(DATA_PATH / "company_registry.json", "r") as f:
+        COMPANIES = json.load(f)
+except FileNotFoundError:
+    raise FileNotFoundError(f"⚠️ WARNING: {DATA_PATH / 'company_registry.json'} not found.")
 
 @tool
 def get_dataset_help() -> str:
