@@ -29,7 +29,7 @@ AlphaCrunch is a LangGraph-powered conversational AI agent using a QLoRA fine-tu
 
 Fine-tuned on 70% RAG-simulated (context + question → answer) and 30% pure knowledge format; 80/10/10 train/val/test split.
 
-Performed local QLoRa fine-tuning on the [Mistral 7B Intruct v0.2](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2) model and deployed to [modal](https://modal.com), accessed through API (FastAPI).
+Performed local QLoRa fine-tuning on the [Mistral 7B Instruct v0.2](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2) model and deployed to [modal](https://modal.com), accessed through API (FastAPI).
 
 | Key Params | Value                    | Reason                                   |
 | ---------- | ------------------------ | ---------------------------------------- |
@@ -41,7 +41,7 @@ Performed local QLoRa fine-tuning on the [Mistral 7B Intruct v0.2](https://huggi
 Adapter (~30MB) saved in [WandB](https://wandb.ai/coffeedrunk/finance-llm/artifacts/adapter/finance-llm-adapter/v1/files); eval with BERTScore, LLM-as-Judge, also logged to W&B.
 
 > To access the dashboard of the fine-tuning and eval:
-> - [WandB LoRA fine-tunning dashboard](https://wandb.ai/coffeedrunk/finance-llm/workspace?nw=nwusercoffeedrunk)
+> - [WandB LoRA fine-tuning dashboard](https://wandb.ai/coffeedrunk/finance-llm/workspace?nw=nwusercoffeedrunk)
 > - [WandB Evals dashboard](https://wandb.ai/coffeedrunk/finance-llm-evals/workspace?nw=nwusercoffeedrunk)
 
 
@@ -75,9 +75,14 @@ Gradio UI → LangGraph (AgentState: messages, intent, context, answer)
 src/alpha_crunch/
   agent/
     config.py     # Immutable registry, paths, aliases
-    vector_store.py # ChromaDB singleton
     rag_node.py   # LangGraph RAG execution
-  state.py       # Pydantic AgentState
+    state.py      # Pydantic AgentState
+  vector_db/
+    contracts.py            # VectorSearch protocol
+    types.py                # Vector DB provider enum/types
+    factory.py              # Provider resolution (chroma/chroma-modal/pinecone)
+    chroma_provider.py      # Local Chroma provider
+    chroma_modal_provider.py # Modal HTTP provider for vector search
 ```
 User input flows: Gradio ChatInterface → LangGraph graph (intent_node → conditional → llm_node) → Mistral 7B on Modal. [gradio](https://www.gradio.app/4.44.1/docs/gradio/chatinterface)
 
@@ -86,7 +91,7 @@ User input flows: Gradio ChatInterface → LangGraph graph (intent_node → cond
 1. Clone and install with uv:
    ```bash
    git clone git@github.com:coffeedrunkpanda/alpha-crunch.git
-   cd alphacrunch
+   cd alpha-crunch
    uv sync
    ```
 
@@ -104,6 +109,34 @@ Copy .env.sample → .env (add Modal API key).
 
    Features custom CSS (loomy mesh gradient, Anta/Courier Prime fonts, glassmorphism). [gradio](https://www.gradio.app/4.44.1/docs/gradio/chatinterface)
 
+## Testing
+
+The project uses `pytest` for tests and `mypy` for type-checking. Both are installed from the `dev` dependency group:
+
+```bash
+uv sync --group dev
+```
+
+Run the current Modal-backed vector provider test:
+
+```bash
+uv run pytest tests/test_chroma_modal_provider.py -v
+```
+
+Run type-checking for the vector DB package:
+
+```bash
+uv run mypy src/alpha_crunch/vector_db
+```
+
+The `ChromaModalProvider` test does not call the real Modal endpoint. It patches `httpx.Client` and uses `httpx.MockTransport` to simulate:
+
+- `GET /health`
+- `GET /ready`
+- `POST /query`
+
+This keeps the test fast and deterministic while still verifying that the provider maps API responses into LangChain `Document` objects correctly.
+
 ## Example Usage
 
 Query: "What are Apple's main supply chain risks?"  
@@ -113,7 +146,7 @@ Answer: Apple's supply chain risks include disruptions in manufacturing or logis
 
  - what is asset allocation?
 
-- what is the sec fillings 10k? why does it matter? 
+- what are SEC 10-K filings? why do they matter? 
 
 - what are the most important concepts in investment? 
 
@@ -133,7 +166,7 @@ Answer: Apple's supply chain risks include disruptions in manufacturing or logis
 - ChromaDB local vector store; uv package management; python-dotenv.
 - QLoRA-tuned Mistral-7B-Instruct (finance-specialized on SEC Q&A); Gradio ChatInterface. 
 
-- Project Manegement with [Linear](https://linear.app)
+- Project Management with [Linear](https://linear.app)
 
 ## Interesting Links
 

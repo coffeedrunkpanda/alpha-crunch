@@ -2,6 +2,7 @@
 
 import os
 import httpx
+from http import HTTPStatus
 
 from dotenv import load_dotenv
 from typing import Any
@@ -16,45 +17,53 @@ MODAL_SECRET = os.getenv("MODAL_SECRET")
 VECTOR_DB_URL = os.getenv("ALPHA_CRUNCH_VECTOR_DB_URL")
 
 class ChromaModalProvider(VectorSearch):
-    def __init__(self):
+    def __init__(self,
+                 modal_key: str | None = MODAL_KEY,
+                 modal_secret: str | None = MODAL_SECRET,
+                 vector_db_url: str | None = VECTOR_DB_URL,
+                 timeout: float = 120.0):
 
-        assert MODAL_KEY is not None, "MODAL_KEY must be set at .env file."
-        assert MODAL_SECRET is not None, "MODAL_SECRET must be set at .env file."
-        assert VECTOR_DB_URL is not None, "VECTOR_DB_URL must be set at .env file."
+        assert modal_key is not None, "MODAL_KEY must be set at .env file."
+        assert modal_secret is not None, "MODAL_SECRET must be set at .env file."
+        assert vector_db_url is not None, "VECTOR_DB_URL must be set at .env file."
         
         self._headers: dict[str, str] = {
             "Content-Type": "application/json",
-            "Modal-Key": MODAL_KEY,
-            "Modal-Secret": MODAL_SECRET,
+            "Modal-Key": modal_key,
+            "Modal-Secret": modal_secret,
         }
         
-        with httpx.Client(timeout=30.0) as client:
+        self._vector_db_url = vector_db_url
+        self._timeout = timeout
+        self.ready = False
+        self.health = False
+
+        with httpx.Client(timeout=self._timeout) as client:
             response = client.get(
-                f"{VECTOR_DB_URL}/health",
+                f"{self._vector_db_url}/health",
                 headers=self._headers,
             )
+ 
+            self.health = True if response.status_code == HTTPStatus.OK else False
             response.raise_for_status()
-            print (response.json())
-            print("✅ ChromaModalProvider initialized")
-
-        with httpx.Client(timeout=120.0) as client:
+            print(response.json())
+            
+        with httpx.Client(timeout=self._timeout) as client:
             response = client.get(
-                f"{VECTOR_DB_URL}/ready",
+                f"{self._vector_db_url}/ready",
                 headers=self._headers,
             )
+
+            self.ready = True if response.status_code == HTTPStatus.OK else False
             response.raise_for_status()
-            print (response.json())
-            self.ready = True if response.json()["ready"] else False
-            
-            if not self.ready:
-                print("ChromaModalProvider is not ready")
-            
+            print(response.json())
 
-    def search(self, query: str, k: int = 3, filter: dict [str, Any] | None = None) -> list[Document]:
 
-        with httpx.Client(timeout=120.0) as client:
+    def search(self, query: str, k: int = 3, filter: dict[str, Any] | None = None) -> list[Document]:
+
+        with httpx.Client(timeout=self._timeout) as client:
             response = client.post(
-                f"{VECTOR_DB_URL}/query",
+                f"{self._vector_db_url}/query",
                 headers=self._headers,
                 json={"query": query, "k": k, "filter": filter},
             )
